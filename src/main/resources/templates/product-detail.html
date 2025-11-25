@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="api-prefix" th:content="${@environment.getProperty('api.prefix')}"/>
+    <title>Product Detail - Fake Store</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<header class="topbar container">
+    <h2 id="productTitle">Product</h2>
+    <nav>
+        <a href="/products" class="btn ghost">Back</a>
+        <a id="editBtn" class="btn">Edit</a>
+        <button id="deleteBtn" class="btn ghost">Delete</button>
+    </nav>
+</header>
+
+<main class="container">
+    <section class="card detail-card" style="display:flex;gap:16px;align-items:flex-start;">
+        <img id="productImage" src="" alt="product image" style="width:220px;height:220px;object-fit:contain;border-radius:8px;background:#fafafa"/>
+        <div class="meta" style="flex:1">
+            <h3 id="titleElm"></h3>
+            <p class="muted" id="categoryElm"></p>
+            <p style="font-weight:700;font-size:1.15rem">$<span id="priceElm"></span></p>
+            <p id="descriptionElm" style="margin-top:12px"></p>
+        </div>
+    </section>
+    <div id="status" class="status" aria-live="polite"></div>
+</main>
+
+<script src="/static/js/app.js" defer></script>
+<script defer>
+document.addEventListener('DOMContentLoaded', async () => {
+    const id = getIdFromPathOrSearch();
+    if (!id) { showMessage('error', 'No product id provided.'); return; }
+
+    const editBtn = document.getElementById('editBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const titleElm = document.getElementById('titleElm');
+    const categoryElm = document.getElementById('categoryElm');
+    const priceElm = document.getElementById('priceElm');
+    const descElm = document.getElementById('descriptionElm');
+    const img = document.getElementById('productImage');
+
+    try {
+        let resp = await fetch(`${(document.querySelector('meta[name="api-prefix"]')?.content)||'/api/v1'}/products/${id}`, { headers: { 'Accept': 'application/json' } });
+        if (!resp.ok) {
+            if (resp.status === 404) { showMessage('error','Product not found'); return; }
+            throw new Error('Status ' + resp.status);
+        }
+        let body = await resp.json();
+        let product = body?.data ?? body;
+        if (!product) { showMessage('error','Product not found'); return; }
+
+        document.getElementById('productTitle').textContent = product.title || `Product #${id}`;
+        titleElm.textContent = product.title || '';
+        categoryElm.textContent = product.category || '';
+        priceElm.textContent = (product.price ?? '').toString();
+        descElm.textContent = product.description || '';
+        img.src = product.image || '/static/img/placeholder.png';
+
+        editBtn.href = `/products/update/${product.id || id}`;
+    } catch (err) {
+        showMessage('error', 'Failed to load product: ' + (err.message || err));
+    }
+
+    deleteBtn.addEventListener('click', async () => {
+        if (!confirm('Delete this product?')) return;
+        try {
+            const ok = await deleteProduct(id);
+            if (ok) {
+                showMessage('success','Product deleted. Redirecting...');
+                setTimeout(() => window.location.href = '/products', 700);
+            } else {
+                showMessage('error','Failed to delete product');
+            }
+        } catch (err) {
+            showMessage('error','Delete error: ' + (err.message || err));
+        }
+    });
+});
+</script>
+</body>
+</html>

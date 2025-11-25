@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="api-prefix" th:content="${@environment.getProperty('api.prefix')}"/>
+    <title>Add Product - Fake Store</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<header class="topbar container">
+    <h2>Add Product</h2>
+    <nav>
+        <a href="/products" class="btn ghost">Back</a>
+    </nav>
+</header>
+
+<main class="container">
+    <section class="card">
+        <form id="addForm" class="form">
+            <label>ID<input id="id" name="id" type="number" min="0" required /></label>
+            <label>Title<input id="title" name="title" required /></label>
+            <label>Price<input id="price" name="price" type="number" step="0.01" min="0" required /></label>
+            <label>Category<input id="category" name="category" required /></label>
+            <label>Image URL<input id="image" name="image" type="url" /></label>
+            <label>Description<textarea id="description" name="description" rows="4"></textarea></label>
+            <div class="form-actions">
+                <button type="submit" class="btn primary">Add</button>
+                <a href="/products" class="btn ghost">Cancel</a>
+            </div>
+        </form>
+        <div id="formStatus" class="status" aria-live="polite"></div>
+    </section>
+</main>
+
+<script src="/static/js/app.js" defer></script>
+<script defer>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('addForm');
+    const status = document.getElementById('formStatus');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            id: parseInt(document.getElementById('id').value),
+            title: document.getElementById('title').value.trim(),
+            price: parseFloat(document.getElementById('price').value),
+            category: document.getElementById('category').value.trim(),
+            image: document.getElementById('image').value.trim(),
+            description: document.getElementById('description').value.trim()
+        };
+        try {
+            const apiPrefix = document.querySelector('meta[name="api-prefix"]')?.content || '/api/v1';
+            const res = await fetch(`${apiPrefix}/products/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const errBody = await res.text().catch(()=>null);
+                throw new Error(errBody || ('Status ' + res.status));
+            }
+            const body = await res.json();
+            const created = body?.data ?? body;
+            showMessage('success', 'Product added. Redirecting...');
+            setTimeout(() => window.location.href = '/products', 800);
+        } catch (err) {
+            showMessage('error', 'Add failed: ' + (err.message || err));
+        }
+    });
+});
+</script>
+</body>
+</html>

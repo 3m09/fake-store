@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- set to your api prefix (e.g. /api/v1) if different -->
+    <meta name="api-prefix" content="/api/v1" />
+    <title>Update Product</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+    <main class="container">
+        <header class="topbar">
+            <h1>Update Product</h1>
+            <nav>
+                <a href="/products">Products</a>
+                <a href="/products/add">Add</a>
+            </nav>
+        </header>
+
+        <section class="card">
+            <form id="updateForm" class="form">
+                <input type="hidden" id="productId" />
+
+                <label for="title">Title</label>
+                <input id="title" name="title" type="text" required />
+
+                <label for="price">Price</label>
+                <input id="price" name="price" type="number" step="0.01" min="0" required />
+
+                <label for="category">Category</label>
+                <input id="category" name="category" type="text" required />
+
+                <label for="image">Image URL</label>
+                <input id="image" name="image" type="url" />
+
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="5"></textarea>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn primary">Save</button>
+                    <a id="cancelBtn" class="btn ghost" href="/products">Cancel</a>
+                </div>
+            </form>
+            <div id="status" class="status" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <script src="/static/js/app.js" defer></script>
+    <script defer>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const id = getIdFromPathOrSearch();
+        const form = document.getElementById('updateForm');
+        const idInput = document.getElementById('productId');
+
+        if (!id) {
+            showMessage('error', 'No product id provided in URL.');
+            return;
+        }
+
+        try {
+            const apiPrefix = document.querySelector('meta[name="api-prefix"]')?.content || '/api/v1';
+            const resp = await fetch(`${apiPrefix}/products/${id}`, { headers: { 'Accept': 'application/json' } });
+            if (!resp.ok) {
+                if (resp.status === 404) { showMessage('error','Product not found'); return; }
+                throw new Error('Status ' + resp.status);
+            }
+            const body = await resp.json();
+            const product = body?.data ?? body;
+            if (!product) { showMessage('error','Product not found'); return; }
+
+            // populate form fields with current product values
+            idInput.value = product.id ?? id;
+            document.getElementById('title').value = product.title ?? '';
+            document.getElementById('price').value = product.price ?? '';
+            document.getElementById('category').value = product.category ?? '';
+            document.getElementById('image').value = product.image ?? '';
+            document.getElementById('description').value = product.description ?? '';
+        } catch (err) {
+            showMessage('error', 'Failed to load product: ' + (err.message || err));
+            return;
+        }
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('title').value.trim(),
+                price: parseFloat(document.getElementById('price').value),
+                category: document.getElementById('category').value.trim(),
+                image: document.getElementById('image').value.trim(),
+                description: document.getElementById('description').value.trim()
+            };
+            const idVal = idInput.value;
+            try {
+                const ok = await updateProduct(idVal, payload);
+                if (ok) {
+                    showMessage('success', 'Product updated successfully. Redirecting...');
+                    setTimeout(() => window.location.href = '/products', 1000);
+                } else {
+                    showMessage('error', 'Failed to update product.');
+                }
+            } catch (err) {
+                showMessage('error', 'Error updating product: ' + (err.message || err));
+            }
+        });
+    });
+    </script>
+</body>
+</html>

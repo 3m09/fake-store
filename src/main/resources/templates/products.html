@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="api-prefix" th:content="${@environment.getProperty('api.prefix')}"/>
+    <title>Products - Fake Store</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <header class="topbar container">
+        <h2>Fake Store — Products</h2>
+        <nav>
+            <a href="/products/add" class="btn">Add Product</a>
+            <a href="/" class="btn ghost">Home</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="card controls" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+            <input id="searchField" placeholder="field (title/category/price)" style="flex:1;min-width:180px"/>
+            <input id="searchValue" placeholder="value or min-max for price" style="flex:2;min-width:220px"/>
+            <button id="filterBtn" class="btn">Filter</button>
+            <button id="clearFilter" class="btn ghost">Clear</button>
+        </section>
+
+        <section>
+            <div id="productsList" class="grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;"></div>
+        </section>
+
+        <section class="pagination" style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:16px; margin-bottom: 16px;">
+            <button id="prevPage" class="btn ghost">Prev</button>
+            <span id="pageInfo">Page 1</span>
+            <button id="nextPage" class="btn">Next</button>
+        </section>
+    </main>
+
+    <script src="/static/js/app.js" defer></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', () => {
+            const listEl = document.getElementById('productsList');
+            const pageInfo = document.getElementById('pageInfo');
+
+            let offset = 0;
+            const limit = 12;
+            let currentPageData = [];
+
+            async function loadPage(newOffset = 0) {
+                try {
+                    const data = await fetchAllProducts(newOffset, limit);
+                    currentPageData = Array.isArray(data) ? data : (data?.data ?? []);
+                    // if backend returned nothing for this offset, keep previous offset and show message
+                    if (!currentPageData || currentPageData.length === 0) {
+                        if (newOffset !== 0) {
+                            showMessage('error', 'No more products.');
+                        } else {
+                            listEl.innerHTML = '<div class="card">No products found</div>';
+                        }
+                        return false;
+                    }
+                    offset = newOffset;
+                    render();
+                    return true;
+                } catch (err) {
+                    showMessage('error', 'Failed to load products: ' + (err.message || err));
+                    return false;
+                }
+            }
+
+            function render() {
+                const page = Math.floor(offset / limit) + 1;
+                listEl.innerHTML = (currentPageData || []).map(productCardHTML).join('') || '<div class="card">No products found</div>';
+                pageInfo.textContent = `Page ${page}`;
+            }
+
+            document.getElementById('filterBtn').addEventListener('click', async () => {
+                const field = document.getElementById('searchField').value.trim();
+                const value = document.getElementById('searchValue').value.trim();
+                if (!field || !value) { await loadPage(0); return; }
+                try {
+                    const apiPrefix = document.querySelector('meta[name="api-prefix"]')?.content || '/api/v1';
+                    const url = `${apiPrefix}/products/filter?field=${encodeURIComponent(field)}&value=${encodeURIComponent(value)}&offset=0&limit=${limit}`;
+                    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                    if (!res.ok) throw new Error('Status ' + res.status);
+                    const body = await res.json();
+                    const filtered = body?.data ?? body ?? [];
+                    currentPageData = Array.isArray(filtered) ? filtered : [];
+                    offset = 0;
+                    render();
+                } catch (err) {
+                    showMessage('error', 'Filter failed: ' + (err.message || err));
+                }
+            });
+
+            document.getElementById('clearFilter').addEventListener('click', async () => {
+                document.getElementById('searchField').value = '';
+                document.getElementById('searchValue').value = '';
+                await loadPage(0);
+            });
+
+            document.getElementById('prevPage').addEventListener('click', async () => {
+                if (offset <= 0) return;
+                const newOffset = Math.max(0, offset - limit);
+                await loadPage(newOffset);
+            });
+            document.getElementById('nextPage').addEventListener('click', async () => {
+                const newOffset = offset + limit;
+                const ok = await loadPage(newOffset);
+                // if backend returned no data for next page, keep offset unchanged
+                if (!ok) {
+                    // nothing to do, loadPage already handled messaging
+                }
+            });
+
+            // initial load
+            loadPage(0);
+        });
+    </script>
+</body>
+</html>
