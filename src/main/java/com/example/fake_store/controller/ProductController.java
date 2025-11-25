@@ -47,12 +47,8 @@ public class ProductController {
     @DeleteMapping("/{id}")
     ResponseEntity<ApiResponse> deleteProductById(@PathVariable Long id) {
         try {
-            boolean deleted = apiService.deleteProductById(id);
-            if (deleted) {
-                return ResponseEntity.ok(new ApiResponse("Product deleted successfully", null));
-            } else {
-                return ResponseEntity.status(404).body(new ApiResponse("Product not found", null));
-            }
+            apiService.deleteProductById(id);
+            return ResponseEntity.ok(new ApiResponse("Product deleted successfully", null));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(new ApiResponse("An error occurred while deleting the product: " + e.getMessage(), null));
         }
@@ -71,8 +67,8 @@ public class ProductController {
     @PostMapping("/update/{id}")
     ResponseEntity<ApiResponse> updateProduct(@PathVariable Long id, @RequestBody ProductDTO productDTO) {
         try {
-            ProductDTO updatedProduct = apiService.updateProduct(id, productDTO);
-            return ResponseEntity.ok(new ApiResponse("Product updated successfully", updatedProduct));
+            apiService.updateProduct(id, productDTO);
+            return ResponseEntity.ok(new ApiResponse("Product updated successfully", null));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(new ApiResponse("An error occurred while updating the product: " + e.getMessage(), null));
         }
