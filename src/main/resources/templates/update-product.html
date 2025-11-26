@@ -3,8 +3,6 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <!-- set to your api prefix (e.g. /api/v1) if different -->
-    <meta name="api-prefix" content="/api/v1" />
     <title>Update Product</title>
     <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
@@ -20,16 +18,16 @@
 
         <section class="card">
             <form id="updateForm" class="form">
-                <input type="hidden" id="productId" />
+                <input type="hidden" id="productId" required/>
 
                 <label for="title">Title</label>
-                <input id="title" name="title" type="text" required />
+                <input id="title" name="title" type="text" />
 
                 <label for="price">Price</label>
                 <input id="price" name="price" type="number" step="0.01" min="0" required />
 
                 <label for="category">Category</label>
-                <input id="category" name="category" type="text" required />
+                <input id="category" name="category" type="text" />
 
                 <label for="image">Image URL</label>
                 <input id="image" name="image" type="url" />
@@ -59,7 +57,7 @@
         }
 
         try {
-            const apiPrefix = document.querySelector('meta[name="api-prefix"]')?.content || '/api/v1';
+            const apiPrefix = '/api/v1';
             const resp = await fetch(`${apiPrefix}/products/${id}`, { headers: { 'Accept': 'application/json' } });
             if (!resp.ok) {
                 if (resp.status === 404) { showMessage('error','Product not found'); return; }
@@ -69,7 +67,6 @@
             const product = body?.data ?? body;
             if (!product) { showMessage('error','Product not found'); return; }
 
-            // populate form fields with current product values
             idInput.value = product.id ?? id;
             document.getElementById('title').value = product.title ?? '';
             document.getElementById('price').value = product.price ?? '';
@@ -95,7 +92,7 @@
                 const ok = await updateProduct(idVal, payload);
                 if (ok) {
                     showMessage('success', 'Product updated successfully. Redirecting...');
-                    setTimeout(() => window.location.href = '/products', 1000);
+                    setTimeout(() => window.location.href = '/products', 800);
                 } else {
                     showMessage('error', 'Failed to update product.');
                 }

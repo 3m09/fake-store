@@ -1,9 +1,7 @@
-const API_PREFIX = (document.querySelector('meta[name="api-prefix"]')?.content) || '/api/v1';
+const API_PREFIX = '/api/v1';
 
 function getFullApi(path) {
-    // path should not include the /products prefix if you pass it explicitly
-    if (path.startsWith('/')) return API_PREFIX + path;
-    return API_PREFIX + '/' + path;
+    return API_PREFIX + path;
 }
 
 function showMessage(type, text, timeout = 4000) {
@@ -25,7 +23,6 @@ function createGlobalStatus() {
 }
 
 function getIdFromPathOrSearch() {
-    // Try search param ?id=, otherwise try last path segment if numeric
     const params = new URLSearchParams(window.location.search);
     if (params.get('id')) return params.get('id');
     const parts = window.location.pathname.split('/').filter(Boolean);
@@ -47,21 +44,22 @@ async function fetchProduct(id) {
 async function updateProduct(id, payload) {
     const url = getFullApi(`/products/update/${id}`);
     const res = await fetch(url, {
-        method: 'POST', // controller uses POST for update
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(payload)
     });
     if (res.ok) return true;
-    // try to parse body for message
     let text;
-    try { const body = await res.json(); text = body?.message || JSON.stringify(body); } catch { text = await res.text(); }
+    try { const body = await res.json(); 
+        text = body?.message || JSON.stringify(body); 
+    }catch { 
+        text = await res.text(); 
+    }
     showMessage('error', 'Update failed: ' + (text || res.status));
     return false;
 }
 
 async function addProduct(payload) {
-    const url = getFullApi('/products');
-    // controller uses POST to /products (apiService.addProduct expects external, but controller maps add to /add -> adjust call site)
     const res = await fetch(getFullApi('/products/add'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -69,7 +67,12 @@ async function addProduct(payload) {
     });
     if (!res.ok) {
         let text;
-        try { const body = await res.json(); text = body?.message || JSON.stringify(body); } catch { text = await res.text(); }
+        try { 
+            const body = await res.json(); 
+            text = body?.message || JSON.stringify(body); 
+        } catch { 
+            text = await res.text(); 
+        }
         throw new Error(text || ('Status ' + res.status));
     }
     return await res.json();
@@ -77,8 +80,6 @@ async function addProduct(payload) {
 
 async function deleteProduct(id) {
     const url = getFullApi(`/products/${id}`);
-    // Use exchange-style endpoint that returns status in controller; controller currently calls service.deleteProductById (no return),
-    // but API may return 200 if successful. We'll call DELETE and check status.
     const res = await fetch(url, { method: 'DELETE' });
     return res.ok;
 }
@@ -88,11 +89,10 @@ async function fetchAllProducts(offset = 0, limit = 12) {
     const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
     if (!res.ok) throw new Error('Fetch failed: ' + res.status);
     const body = await res.json();
-    // If controller wraps response in ApiResponse { message, data }, try to extract data
     return body?.data ?? body;
 }
 
-// Utility to render a product card (used in product listing pages)
+
 function productCardHTML(product) {
     return `
     <article class="product-card" id=${product.id}>
@@ -124,17 +124,15 @@ async function handleDelete(id, btn) {
     const ok = await deleteProduct(id);
     if (ok) {
         showMessage('success', 'Product deleted');
-        // remove card if possible or refresh
         const card = document.getElementById(id);
         if (card) card.remove();
-        else setTimeout(() => location.reload(), 300);
+        else setTimeout(() => location.reload(), 3000);
     } else {
         showMessage('error', 'Failed to delete product');
         btn.disabled = false;
     }
 }
 
-// expose some functions globally so templates can call them directly
 window.getIdFromPathOrSearch = getIdFromPathOrSearch;
 window.fetchProduct = fetchProduct;
 window.updateProduct = updateProduct;

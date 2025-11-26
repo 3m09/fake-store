@@ -115,13 +115,14 @@ body{
   border-radius:8px;
   font-size:0.95rem;
   display:none;
+  position: absolute;
 }
 
 .status.show{display:block}
 .status.success{background:rgba(22,163,74,0.08); color:var(--success); border:1px solid rgba(22,163,74,0.12)}
 .status.error{background:rgba(220,38,38,0.08); color:var(--danger); border:1px solid rgba(220,38,38,0.12)}
 
-/* product list / card styles */
+
 .grid {
   display: grid;
   gap: 12px;
@@ -196,7 +197,6 @@ body{
   color: var(--accent);
 }
 
-/* responsive tweak: larger image area on wide screens */
 @media (min-width: 900px) {
   .product-card img { height: 180px; }
 }

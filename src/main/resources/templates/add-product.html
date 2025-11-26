@@ -3,7 +3,6 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="api-prefix" th:content="${@environment.getProperty('api.prefix')}"/>
     <title>Add Product - Fake Store</title>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
@@ -50,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
             description: document.getElementById('description').value.trim()
         };
         try {
-            const apiPrefix = document.querySelector('meta[name="api-prefix"]')?.content || '/api/v1';
+            const apiPrefix = '/api/v1';
             const res = await fetch(`${apiPrefix}/products/add`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
